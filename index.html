@@ -2,6 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+/* Apply a saved theme choice before first paint, so there's no flash of
+   the wrong theme. Automatic (no saved choice) leaves this alone and the
+   CSS media query follows the system. Kept in its own storage key, not
+   the app's data, so it's untouched by backup/restore. */
+(function () {
+  try {
+    var v = localStorage.getItem("sbm-theme");
+    if (v === "light" || v === "dark") document.documentElement.setAttribute("data-theme", v);
+  } catch (e) {}
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#e9eae6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
@@ -19,37 +31,45 @@
      one accent colour, no emoji except where it earns its place.
      --------------------------------------------------------------- */
   :root {
+    /* Light theme (also the Automatic fallback before system preference is known).
+       Every text token here holds at least 4.5:1 contrast against --paper and
+       --panel — see NOTES-private.md for the measured ratios. */
     --paper:  #e9eae6;
     --panel:  #f3f3f0;
     --ink:    #1a1c1a;
-    --muted:  #6b706a;
-    --faint:  #8d928c;
-    --rule:   #cdd0c9;
+    --muted:  #565b54;
+    --faint:  #616660;
+    --rule:   #c7cac3;
     --rule-2: #dcdfd8;
-    --accent: #8a2b2b;
+    --accent: #7a2424;
     --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     --sans: ui-sans-serif, -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
     --measure: 34rem;
+    color-scheme: light dark; /* let native controls (date picker, etc) follow the system unless overridden below */
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --paper:  #15171a;
       --panel:  #1c1f22;
-      --ink:    #dddcd4;
-      --muted:  #91968f;
-      --faint:  #757a74;
-      --rule:   #2f3338;
-      --rule-2: #24282c;
-      --accent: #cf7d75;
+      --ink:    #eeece3;
+      --muted:  #a9ada5;
+      --faint:  #8b8f88;
+      --rule:   #34383d;
+      --rule-2: #282c30;
+      --accent: #e2938a;
     }
   }
+  /* Explicit choice from the Appearance switch overrides the system setting.
+     Higher specificity than the two :root rules above, so it wins either way. */
   :root[data-theme="dark"] {
-    --paper:  #15171a; --panel:  #1c1f22; --ink:    #dddcd4; --muted:  #91968f;
-    --faint:  #757a74; --rule:   #2f3338; --rule-2: #24282c; --accent: #cf7d75;
+    --paper:  #15171a; --panel:  #1c1f22; --ink:    #eeece3; --muted:  #a9ada5;
+    --faint:  #8b8f88; --rule:   #34383d; --rule-2: #282c30; --accent: #e2938a;
+    color-scheme: dark;
   }
   :root[data-theme="light"] {
-    --paper:  #e9eae6; --panel:  #f3f3f0; --ink:    #1a1c1a; --muted:  #6b706a;
-    --faint:  #8d928c; --rule:   #cdd0c9; --rule-2: #dcdfd8; --accent: #8a2b2b;
+    --paper:  #e9eae6; --panel:  #f3f3f0; --ink:    #1a1c1a; --muted:  #565b54;
+    --faint:  #616660; --rule:   #c7cac3; --rule-2: #dcdfd8; --accent: #7a2424;
+    color-scheme: light;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -219,6 +239,14 @@
 <footer>
   <p><b>Everything here lives on this phone.</b> Nothing is sent anywhere, there is no account, and no one else can see it. Use <b>Back up / restore</b> to save a copy you keep.</p>
   <p style="margin-top:.5rem">This is a first version, made to be argued with. If something is wrong, missing, or annoying, tap Tell Mike and say so.</p>
+  <div style="margin-top:1rem">
+    <h3 style="margin-bottom:.5rem">Appearance</h3>
+    <div class="seg" id="themeSeg">
+      <button type="button" data-theme-choice="auto">Automatic</button>
+      <button type="button" data-theme-choice="light">Light</button>
+      <button type="button" data-theme-choice="dark">Dark</button>
+    </div>
+  </div>
   <p style="margin-top:.5rem" class="tiny" id="ver"></p>
 </footer>
 
@@ -247,8 +275,9 @@
    in NOTES-private.md, which never leaves the private repo.
    ============================================================ */
 
-const APP_VERSION = "v0.1";
+const APP_VERSION = "v0.2";
 const STORE_KEY = "sbm-money-v1"; // unique prefix — themikemonday.github.io is a shared origin
+const THEME_KEY = "sbm-theme-v1"; // separate key, on purpose — never part of `state`, so it plays no part in backup/restore
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -816,8 +845,59 @@ $("fbBtn").onclick = () => {
   });
 };
 
+/* ============================================================
+   Appearance — Automatic / Light / Dark. Lives in its own storage
+   key (THEME_KEY), never inside `state`, so it is not part of any
+   backup/restore file and restoring one can't touch it. The actual
+   theme is applied before first paint by the inline script in
+   <head>; this just keeps it in sync with the switch and reload.
+   ============================================================ */
+function getThemePref() {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return (v === "light" || v === "dark") ? v : "auto";
+  } catch (e) { return "auto"; }
+}
+function setThemePref(v) {
+  try {
+    if (v === "light" || v === "dark") localStorage.setItem(THEME_KEY, v);
+    else localStorage.removeItem(THEME_KEY);
+  } catch (e) {}
+  applyTheme();
+}
+function applyTheme() {
+  const v = getThemePref();
+  if (v === "light" || v === "dark") document.documentElement.setAttribute("data-theme", v);
+  else document.documentElement.removeAttribute("data-theme");
+  // Keep the iOS status-bar colour matching a forced choice too; Automatic
+  // leaves the two <meta name="theme-color" media="..."> tags to do their job.
+  let forced = document.getElementById("themeColorForced");
+  if (v === "light" || v === "dark") {
+    if (!forced) {
+      forced = document.createElement("meta");
+      forced.name = "theme-color";
+      forced.id = "themeColorForced";
+      document.head.appendChild(forced);
+    }
+    forced.content = v === "dark" ? "#15171a" : "#e9eae6";
+  } else if (forced) {
+    forced.remove();
+  }
+  updateThemeSeg();
+}
+function updateThemeSeg() {
+  const pref = getThemePref();
+  document.querySelectorAll("#themeSeg [data-theme-choice]").forEach(btn => {
+    btn.classList.toggle("on", btn.dataset.themeChoice === pref);
+  });
+}
+document.querySelectorAll("#themeSeg [data-theme-choice]").forEach(btn => {
+  btn.onclick = () => setThemePref(btn.dataset.themeChoice);
+});
+
 /* ---------------- Boot ---------------- */
 load();
+applyTheme();
 $("ver").textContent = `Sally's Boys' Money ${APP_VERSION} · made at home, for one family`;
 render();
 </script>
