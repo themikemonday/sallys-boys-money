@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#e9eae6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sally's Boys' Money</title>
+<style>
+  /* ---------------------------------------------------------------
+     Sally's Boys' Money — sibling of Sally's Books. Same house
+     style: an index/ledger, not an app-store app. Hairline rules
+     instead of cards, ui-serif for names and numbers that matter,
+     one accent colour, no emoji except where it earns its place.
+     --------------------------------------------------------------- */
+  :root {
+    --paper:  #e9eae6;
+    --panel:  #f3f3f0;
+    --ink:    #1a1c1a;
+    --muted:  #6b706a;
+    --faint:  #8d928c;
+    --rule:   #cdd0c9;
+    --rule-2: #dcdfd8;
+    --accent: #8a2b2b;
+    --serif: ui-serif, "New York", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: ui-sans-serif, -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+    --measure: 34rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:  #15171a;
+      --panel:  #1c1f22;
+      --ink:    #dddcd4;
+      --muted:  #91968f;
+      --faint:  #757a74;
+      --rule:   #2f3338;
+      --rule-2: #24282c;
+      --accent: #cf7d75;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:  #15171a; --panel:  #1c1f22; --ink:    #dddcd4; --muted:  #91968f;
+    --faint:  #757a74; --rule:   #2f3338; --rule-2: #24282c; --accent: #cf7d75;
+  }
+  :root[data-theme="light"] {
+    --paper:  #e9eae6; --panel:  #f3f3f0; --ink:    #1a1c1a; --muted:  #6b706a;
+    --faint:  #8d928c; --rule:   #cdd0c9; --rule-2: #dcdfd8; --accent: #8a2b2b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  button, summary, label { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  :focus-visible { outline: 1.5px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font: 16px/1.6 var(--sans);
+    padding-bottom: 2.5rem;
+    -webkit-text-size-adjust: 100%;
+    font-variant-numeric: tabular-nums;
+  }
+  main, header .wrap, footer { max-width: var(--measure); margin: 0 auto; }
+
+  header { padding: calc(2rem + env(safe-area-inset-top)) 1.25rem 0; background: var(--paper); }
+  header h1 { font: 400 1.75rem/1.2 var(--serif); letter-spacing: -.01em; text-wrap: balance; }
+  header p {
+    font-size: .82rem; color: var(--muted); margin-top: .5rem;
+    padding-bottom: 1.1rem; border-bottom: 1px solid var(--ink);
+  }
+  main { padding: 0 1.25rem; }
+
+  h2 { font: 400 1.22rem/1.3 var(--serif); margin-bottom: .3rem; text-wrap: balance; }
+  h3 { font: 600 .7rem/1.3 var(--sans); letter-spacing: .13em; text-transform: uppercase;
+       color: var(--muted); margin-bottom: .7rem; }
+
+  .card { padding: 1.3rem 0; margin-bottom: 0; border-bottom: 1px solid var(--rule); }
+  .card:first-child { padding-top: 1.4rem; }
+  .card:last-child { border-bottom: none; }
+  .note { font-size: .85rem; color: var(--muted); margin-bottom: .9rem; }
+  .tiny { font-size: .76rem; color: var(--faint); line-height: 1.5; }
+
+  .btn {
+    font: 600 .78rem/1 var(--sans); letter-spacing: .05em;
+    cursor: pointer; padding: .7rem 1.05rem; min-height: 2.9rem;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    border-radius: 2px;
+  }
+  .btn.ghost { background: none; color: var(--ink); border-color: var(--rule); }
+  .btn.danger { background: none; border-color: var(--accent); color: var(--accent); }
+  .btn.wide { width: 100%; }
+  .btn:active { opacity: .7; }
+  .btn-row { display: flex; gap: .55rem; flex-wrap: wrap; margin-top: .9rem; }
+  .mini {
+    font: 600 .68rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+    cursor: pointer; padding: .5rem .65rem; min-height: 2.4rem;
+    border: 1px solid var(--rule); background: none; color: var(--muted); border-radius: 2px;
+  }
+  .mini:active { color: var(--ink); }
+  .mini.danger { border-color: var(--accent); color: var(--accent); }
+
+  input[type=text], input[type=date], textarea, select {
+    font: 400 1rem/1.5 var(--sans); width: 100%; padding: .7rem .75rem; min-height: 2.9rem;
+    border: 1px solid var(--rule); border-radius: 2px;
+    background: var(--panel); color: var(--ink);
+  }
+  input[inputmode=decimal] {
+    font: 400 1.4rem/1.4 var(--serif); width: 100%; padding: .7rem .75rem; min-height: 3.2rem;
+    border: 1px solid var(--rule); border-radius: 2px; background: var(--panel); color: var(--ink);
+  }
+  input:focus, textarea:focus { border-color: var(--ink); }
+  label.fld { display: block; margin-bottom: 1rem; }
+  label.fld > span {
+    display: block; font: 600 .68rem/1.3 var(--sans); letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: .35rem;
+  }
+
+  /* Boys, on the home screen — a ledger of two (or more) balances */
+  .boy-card {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem 0; border-bottom: 1px solid var(--rule-2); cursor: pointer;
+    min-height: 3.2rem;
+  }
+  .boy-card:last-child { border-bottom: none; }
+  .boy-name { font: 400 1.3rem/1.3 var(--serif); }
+  .boy-balance { font: 400 1.3rem/1.3 var(--serif); white-space: nowrap; }
+  .boy-balance.neg { color: var(--accent); }
+  .chev { font-size: .8rem; color: var(--faint); }
+
+  /* Boy screen */
+  .back { font: 600 .72rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase;
+          color: var(--muted); background: none; border: none; cursor: pointer; padding: .5rem 0; margin-bottom: .3rem; }
+  .balance-big { font: 400 2.6rem/1.1 var(--serif); margin: .2rem 0 .3rem; }
+  .balance-big.neg { color: var(--accent); }
+  .balance-sub { font-size: .8rem; color: var(--muted); margin-bottom: 1rem; }
+
+  .seg { display: flex; gap: .5rem; flex-wrap: wrap; }
+  .seg button {
+    font: 600 .72rem/1 var(--sans); letter-spacing: .06em;
+    padding: .6rem .85rem; min-height: 2.6rem; border-radius: 2px;
+    border: 1px solid var(--rule); background: none; color: var(--muted); cursor: pointer;
+  }
+  .seg button.on { border-color: var(--ink); color: var(--ink); background: var(--panel); }
+
+  /* History — a ledger line each: date, note, amount, running balance */
+  .entry {
+    display: flex; align-items: center; gap: .8rem;
+    padding: .8rem 0; border-bottom: 1px solid var(--rule-2); cursor: pointer;
+    min-height: 2.9rem;
+  }
+  .entry:last-child { border-bottom: none; }
+  .entry .grow { flex: 1; min-width: 0; }
+  .entry-date { font-size: .72rem; color: var(--faint); letter-spacing: .03em; }
+  .entry-note { font-size: .98rem; margin-top: .1rem; }
+  .entry-note.blank { color: var(--faint); font-style: italic; }
+  .entry-amounts { text-align: right; flex-shrink: 0; }
+  .entry-amount { font: 400 1.05rem/1.2 var(--serif); white-space: nowrap; }
+  .entry-amount.in { color: var(--ink); }
+  .entry-amount.out { color: var(--muted); }
+  .entry-after { font-size: .68rem; color: var(--faint); margin-top: .15rem; white-space: nowrap; }
+  .entry-after.neg { color: var(--accent); }
+
+  .empty { color: var(--muted); padding: 1.6rem 0; font-size: .92rem; }
+  .empty .mark { font: 400 1.6rem/1 var(--serif); color: var(--rule); display: block; margin-bottom: .6rem; }
+
+  /* Manage-boys rows */
+  .manage-row { display: flex; align-items: center; gap: .6rem; padding: .8rem 0; border-bottom: 1px solid var(--rule-2); }
+  .manage-row:last-child { border-bottom: none; }
+  .manage-row input { flex: 1; }
+
+  .confirm-row {
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    padding: .7rem 0; margin-top: .3rem;
+  }
+  .confirm-row .msg { font-size: .84rem; color: var(--ink); flex-basis: 100%; }
+
+  dialog {
+    border: none; border-radius: 0; padding: 0; width: 100%; max-width: 40rem;
+    margin: auto auto 0; background: var(--paper); color: var(--ink);
+    border-top: 2px solid var(--ink);
+  }
+  dialog::backdrop { background: rgba(10,12,10,.55); }
+  .sheet { padding: 1.4rem 1.25rem calc(1.4rem + env(safe-area-inset-bottom)); max-height: 86vh; overflow-y: auto; }
+  .sheet h2 { margin-bottom: .5rem; }
+
+  .fab {
+    position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 61;
+    font: 600 .64rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase;
+    padding: .6rem .7rem; border-radius: 2px;
+    border: 1px solid var(--rule); background: var(--panel); color: var(--muted);
+    cursor: pointer;
+  }
+
+  footer {
+    padding: 2rem 1.25rem 2.5rem; font-size: .76rem; color: var(--faint); line-height: 1.6;
+    border-top: 1px solid var(--rule); margin-top: 1rem;
+  }
+  footer p + p { margin-top: .6rem; }
+  footer b { color: var(--muted); font-weight: 600; }
+  .ok { color: var(--ink); }
+  .err { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Sally's Boys' Money</h1>
+    <p id="tagline">What each of them has, and where it went.</p>
+  </div>
+</header>
+
+<main><div id="view"></div></main>
+
+<footer>
+  <p><b>Everything here lives on this phone.</b> Nothing is sent anywhere, there is no account, and no one else can see it. Use <b>Back up / restore</b> to save a copy you keep.</p>
+  <p style="margin-top:.5rem">This is a first version, made to be argued with. If something is wrong, missing, or annoying, tap Tell Mike and say so.</p>
+  <p style="margin-top:.5rem" class="tiny" id="ver"></p>
+</footer>
+
+<button class="fab" id="fbBtn" title="Tell Mike what's wrong">Tell Mike</button>
+
+<dialog id="sheet"><div class="sheet" id="sheetBody"></div></dialog>
+
+<script>
+/* ============================================================
+   Sally's Boys' Money — a single file, no build, no account, no
+   server. Everything stays in this browser on this phone.
+
+   The job: for each boy, a running total of what he has, built by
+   recording money IN and money OUT as it happens, so no one has to
+   remember or referee it later. The history underneath the balance
+   is the point as much as the number is — it's the answer to "wait,
+   what did that come from?"
+
+   Sally is the only one who records entries, on her own iPhone.
+
+   PUBLIC FILE. This is served from a public repo — comments included,
+   view-source and crawlable by anyone. Nothing about a specific child
+   is written here; boys' names are typed in by Sally at runtime and
+   live only in this browser's storage, never in this file. The real
+   working notes, with Sally's own words about why this was built, are
+   in NOTES-private.md, which never leaves the private repo.
+   ============================================================ */
+
+const APP_VERSION = "v0.1";
+const STORE_KEY = "sbm-money-v1"; // unique prefix — themikemonday.github.io is a shared origin
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ============================================================
+   PURE-ARITHMETIC:BEGIN
+   Money is handled as whole cents so nothing ever drifts. This
+   block has no DOM and no shared state — it's extracted verbatim
+   by sallys-boys-money.test.mjs and run in isolation, so keep it
+   that way: pure functions only, arguments in, a value out.
+   ============================================================ */
+function toCents(input) {
+  // Accepts "12.5", "$12.50", "12,50" typed weirdly, "-4" — returns
+  // an integer number of cents, or null if it doesn't read as money.
+  if (typeof input === "number") return Number.isFinite(input) ? Math.round(input * 100) : null;
+  let s = String(input == null ? "" : input).trim();
+  if (!s) return null;
+  s = s.replace(/[$\s]/g, "").replace(/,/g, "");
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  const n = parseFloat(s);
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
+}
+function formatMoney(cents) {
+  const c = Number.isFinite(cents) ? Math.round(cents) : 0;
+  const neg = c < 0;
+  const abs = Math.abs(c);
+  const dollars = Math.floor(abs / 100);
+  const rem = abs % 100;
+  return (neg ? "-$" : "$") + dollars.toLocaleString("en-AU") + "." + String(rem).padStart(2, "0");
+}
+function sortEntriesAsc(entries) {
+  // Chronological order: by date, then by the order they were created
+  // (so two entries on the same day keep a stable, sensible order).
+  return entries.slice().sort((a, b) =>
+    (a.date || "").localeCompare(b.date || "") || (a.createdAt || 0) - (b.createdAt || 0));
+}
+function runningBalances(entriesAsc) {
+  // entriesAsc must already be in the order the balance moves through.
+  // Returns [{id, balance}] where balance is the total AFTER that entry.
+  let bal = 0;
+  return entriesAsc.map(e => {
+    bal += e.type === "out" ? -Math.abs(e.cents) : Math.abs(e.cents);
+    return { id: e.id, balance: bal };
+  });
+}
+function totalBalance(entries) {
+  return entries.reduce((s, e) => s + (e.type === "out" ? -Math.abs(e.cents) : Math.abs(e.cents)), 0);
+}
+/* PURE-ARITHMETIC:END */
+
+/* ---------------- State ---------------- */
+const BLANK = {
+  boys: [],      // [{ id, name }]
+  entries: [],   // [{ id, boyId, type: 'in'|'out', cents, note, date, createdAt }]
+  reports: [],
+  fbPhone: "",
+  screen: "home",     // 'home' | 'manage' | 'boy'
+  currentBoyId: null,
+  confirmRemoveBoyId: null,
+  seenStandaloneNote: false
+};
+let state = structuredClone(BLANK);
+
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    state = Object.assign(structuredClone(BLANK), saved);
+    state.boys = (saved.boys || []).map(normaliseBoy);
+    state.entries = (saved.entries || []).map(normaliseEntry);
+  } catch (e) {}
+}
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4); }
+function normaliseBoy(b) { return { id: b.id || uid(), name: b.name || "" }; }
+function normaliseEntry(e) {
+  return {
+    id: e.id || uid(),
+    boyId: e.boyId,
+    type: e.type === "out" ? "out" : "in",
+    cents: Math.max(0, Math.round(+e.cents || 0)),
+    note: e.note || "",
+    date: e.date || todayISO(),
+    createdAt: e.createdAt || Date.now()
+  };
+}
+function todayISO() {
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+function fmtDateLong(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, (m || 1) - 1, d || 1);
+  return dt.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+function boyById(id) { return state.boys.find(b => b.id === id); }
+function entriesFor(boyId) { return state.entries.filter(e => e.boyId === boyId); }
+function balanceFor(boyId) { return totalBalance(entriesFor(boyId)); }
+
+/* ============================================================
+   Render
+   ============================================================ */
+function render() {
+  const v = $("view");
+  if (state.screen === "manage") v.innerHTML = viewManage();
+  else if (state.screen === "boy" && boyById(state.currentBoyId)) v.innerHTML = viewBoy(boyById(state.currentBoyId));
+  else { state.screen = "home"; v.innerHTML = viewHome(); }
+  wire();
+}
+
+function goHome() { state.screen = "home"; state.currentBoyId = null; save(); render(); }
+
+/* ---------------- Home-screen storage note (iOS trap) ---------------- */
+function isStandalone() {
+  return navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+}
+function standaloneNote() {
+  if (!isStandalone() || state.seenStandaloneNote || state.boys.length) return "";
+  return `<div class="card">
+    <h2>Your boys are still in Safari</h2>
+    <p class="note">Adding this to your Home Screen gives it its own separate storage &mdash; iPhones keep the app and Safari apart, so anything you added in Safari is not in here. <b>Nothing has been deleted.</b></p>
+    <p class="note">To bring it across: open the same page in <b>Safari</b>, go to <b>Back up / restore</b>, and tap <b>Copy all my data</b>. Then come back here and tap <b>Paste data in</b>.</p>
+    <div class="btn-row"><button class="mini" id="dismissStandalone">Got it, hide this</button></div>
+  </div>`;
+}
+
+/* ============================================================
+   HOME — a card per boy, his balance, tap for his history
+   ============================================================ */
+function viewHome() {
+  if (!state.boys.length) {
+    return standaloneNote() + `
+    <div class="card empty">
+      <p class="mark">§</p>
+      <p><b>No one's set up yet.</b></p>
+      <p style="margin-top:.3rem">Add each boy's name once — you only do this bit one time.</p>
+      <label class="fld" style="margin-top:1rem"><span>His name</span>
+        <input type="text" id="firstBoyName" placeholder="First name" enterkeyhint="done"></label>
+      <div class="btn-row"><button class="btn" id="firstBoyAdd">Add him</button></div>
+    </div>
+    <div class="card">
+      <button class="mini" id="btnBackup2">Back up / restore</button>
+    </div>`;
+  }
+  return standaloneNote() + `
+  <div class="card" style="padding-bottom:0">
+    ${state.boys.map(b => {
+      const bal = balanceFor(b.id);
+      return `<div class="boy-card" data-boy="${b.id}">
+        <div class="boy-name">${esc(b.name || "Unnamed")}</div>
+        <div style="display:flex;align-items:baseline;gap:.6rem">
+          <div class="boy-balance${bal < 0 ? " neg" : ""}">${formatMoney(bal)}</div>
+          <div class="chev">›</div>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>
+  <div class="card">
+    <div class="btn-row">
+      <button class="mini" id="btnManage">Manage boys</button>
+      <button class="mini" id="btnBackup2">Back up / restore</button>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   MANAGE BOYS — add, rename, remove. No names are ever hardcoded;
+   this screen is the only place they're typed in.
+   ============================================================ */
+function viewManage() {
+  return `
+  <div class="card" style="padding-top:1.4rem">
+    <button class="back" id="backHome">‹ All boys</button>
+    <h2>Manage boys</h2>
+    <p class="note">Add, rename or remove. Removing a boy removes his history too — there's a check before it happens.</p>
+  </div>
+  <div class="card">
+    ${state.boys.length ? state.boys.map(b => manageRow(b)).join("") : `<p class="note">No one added yet.</p>`}
+  </div>
+  <div class="card">
+    <h3>Add a boy</h3>
+    <div class="manage-row">
+      <input type="text" id="newBoyName" placeholder="First name" enterkeyhint="done">
+      <button class="mini" id="addBoy">Add</button>
+    </div>
+  </div>`;
+}
+function manageRow(b) {
+  if (state.confirmRemoveBoyId === b.id) {
+    return `<div class="confirm-row">
+      <div class="msg">Remove <b>${esc(b.name || "Unnamed")}</b> and all ${plural(entriesFor(b.id).length, "entry", "entries")}? This can't be undone.</div>
+      <button class="mini danger" data-confirm-remove="${b.id}">Yes, remove him</button>
+      <button class="mini" data-cancel-remove="${b.id}">Cancel</button>
+    </div>`;
+  }
+  return `<div class="manage-row">
+    <input type="text" data-rename="${b.id}" value="${esc(b.name)}" placeholder="First name">
+    <button class="mini danger" data-remove="${b.id}">Remove</button>
+  </div>`;
+}
+function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
+
+/* ============================================================
+   BOY — his balance, add money in/out, his history newest first
+   ============================================================ */
+function viewBoy(b) {
+  const bal = balanceFor(b.id);
+  const asc = sortEntriesAsc(entriesFor(b.id));
+  const withBal = runningBalances(asc);
+  const balMap = {}; withBal.forEach(x => balMap[x.id] = x.balance);
+  const desc = asc.slice().reverse();
+
+  return `
+  <div class="card" style="padding-top:1.4rem">
+    <button class="back" id="backHome">‹ All boys</button>
+    <h2>${esc(b.name || "Unnamed")}</h2>
+    <div class="balance-big${bal < 0 ? " neg" : ""}">${formatMoney(bal)}</div>
+    <div class="balance-sub">${bal < 0 ? "He owes — worth knowing before the next pocket money." : "Current balance."}</div>
+    <div class="btn-row">
+      <button class="btn wide" id="btnIn">Money in</button>
+      <button class="btn ghost wide" id="btnOut">Money out</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>History</h3>
+    ${desc.length ? desc.map(e => entryRow(e, balMap[e.id])).join("") : `
+      <div class="empty"><p class="mark">§</p><p>Nothing recorded yet. Money in or Money out above starts it.</p></div>`}
+  </div>`;
+}
+
+function entryRow(e, balAfter) {
+  const sign = e.type === "out" ? "−" : "+";
+  return `<div class="entry" data-entry="${e.id}">
+    <div class="grow">
+      <div class="entry-date">${fmtDateLong(e.date)}</div>
+      <div class="entry-note${e.note ? "" : " blank"}">${e.note ? esc(e.note) : "No note"}</div>
+    </div>
+    <div class="entry-amounts">
+      <div class="entry-amount ${e.type}">${sign} ${formatMoney(e.cents)}</div>
+      <div class="entry-after${balAfter < 0 ? " neg" : ""}">then ${formatMoney(balAfter)}</div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   Wiring
+   ============================================================ */
+function wire() {
+  const v = $("view");
+
+  if ($("dismissStandalone")) $("dismissStandalone").onclick = () => { state.seenStandaloneNote = true; save(); render(); };
+  if ($("btnBackup2")) $("btnBackup2").onclick = openBackup;
+  if ($("btnManage")) $("btnManage").onclick = () => { state.screen = "manage"; save(); render(); };
+  if ($("backHome")) $("backHome").onclick = goHome;
+
+  v.querySelectorAll("[data-boy]").forEach(el => el.onclick = () => {
+    state.screen = "boy"; state.currentBoyId = el.dataset.boy; save(); render();
+  });
+
+  if ($("firstBoyAdd")) $("firstBoyAdd").onclick = () => {
+    const name = $("firstBoyName").value.trim();
+    if (!name) return;
+    state.boys.push(normaliseBoy({ name })); save(); render();
+  };
+  if ($("firstBoyName")) $("firstBoyName").onkeydown = e => { if (e.key === "Enter") $("firstBoyAdd").click(); };
+
+  if ($("addBoy")) $("addBoy").onclick = () => {
+    const name = $("newBoyName").value.trim();
+    if (!name) return;
+    state.boys.push(normaliseBoy({ name })); save(); render();
+  };
+  if ($("newBoyName")) $("newBoyName").onkeydown = e => { if (e.key === "Enter") $("addBoy").click(); };
+
+  v.querySelectorAll("[data-rename]").forEach(inp => {
+    inp.onblur = () => {
+      const b = boyById(inp.dataset.rename); if (!b) return;
+      b.name = inp.value.trim() || b.name; save(); render();
+    };
+  });
+  v.querySelectorAll("[data-remove]").forEach(btn => btn.onclick = () => {
+    state.confirmRemoveBoyId = btn.dataset.remove; render();
+  });
+  v.querySelectorAll("[data-cancel-remove]").forEach(btn => btn.onclick = () => {
+    state.confirmRemoveBoyId = null; render();
+  });
+  v.querySelectorAll("[data-confirm-remove]").forEach(btn => btn.onclick = () => {
+    const id = btn.dataset.confirmRemove;
+    state.boys = state.boys.filter(b => b.id !== id);
+    state.entries = state.entries.filter(e => e.boyId !== id);
+    state.confirmRemoveBoyId = null;
+    save(); render();
+  });
+
+  if ($("btnIn")) $("btnIn").onclick = () => openMoneyForm(state.currentBoyId, "in");
+  if ($("btnOut")) $("btnOut").onclick = () => openMoneyForm(state.currentBoyId, "out");
+  v.querySelectorAll("[data-entry]").forEach(el => el.onclick = () => openMoneyForm(state.currentBoyId, null, el.dataset.entry));
+}
+
+/* ============================================================
+   Money-in / money-out sheet — used for both adding and editing,
+   so there's exactly one form to get right.
+   ============================================================ */
+function openSheet(html) {
+  $("sheetBody").innerHTML = html;
+  $("sheet").showModal();
+}
+function closeSheet() { if ($("sheet").open) $("sheet").close(); }
+
+function openMoneyForm(boyId, type, editId) {
+  const editing = !!editId;
+  const existing = editing ? state.entries.find(e => e.id === editId) : null;
+  const t = existing ? existing.type : (type || "in");
+  const amountStr = existing ? (existing.cents / 100).toFixed(2) : "";
+  const note = existing ? existing.note : "";
+  const date = existing ? existing.date : todayISO();
+
+  openSheet(`
+    <h2>${editing ? "Edit entry" : (t === "out" ? "Money out" : "Money in")}</h2>
+    <div class="seg" style="margin-bottom:1rem">
+      <button data-type="in" class="${t === "in" ? "on" : ""}">Money in</button>
+      <button data-type="out" class="${t === "out" ? "on" : ""}">Money out</button>
+    </div>
+    <label class="fld"><span>Amount</span>
+      <input type="text" inputmode="decimal" id="mfAmount" placeholder="0.00" value="${esc(amountStr)}"></label>
+    <label class="fld"><span>What for</span>
+      <input type="text" id="mfNote" placeholder="Birthday from Nana, Lego, etc." value="${esc(note)}"></label>
+    <label class="fld"><span>Date</span>
+      <input type="date" id="mfDate" value="${esc(date)}"></label>
+    <p id="mfSay" class="tiny" style="margin-bottom:.6rem"></p>
+    <div class="btn-row">
+      <button class="btn" id="mfSave">${editing ? "Save" : "Add it"}</button>
+      <button class="mini" id="mfCancel">Cancel</button>
+    </div>
+    ${editing ? `<div id="mfDeleteArea" style="margin-top:1rem"><button class="mini danger" id="mfDelete">Delete this entry</button></div>` : ""}
+  `);
+
+  let curType = t;
+  $("sheetBody").querySelectorAll("[data-type]").forEach(btn => btn.onclick = () => {
+    curType = btn.dataset.type;
+    $("sheetBody").querySelectorAll("[data-type]").forEach(b => b.classList.toggle("on", b === btn));
+  });
+  $("mfCancel").onclick = closeSheet;
+  $("mfSave").onclick = () => {
+    const cents = toCents($("mfAmount").value);
+    const say = $("mfSay");
+    if (cents === null || cents <= 0) {
+      say.className = "tiny err"; say.textContent = "That doesn't read as an amount — try something like 5 or 5.50.";
+      return;
+    }
+    const date = $("mfDate").value || todayISO();
+    const note = $("mfNote").value.trim();
+    if (editing) {
+      Object.assign(existing, { type: curType, cents, note, date });
+    } else {
+      state.entries.push(normaliseEntry({ boyId, type: curType, cents, note, date, createdAt: Date.now() }));
+    }
+    save(); closeSheet(); render();
+  };
+  if (editing) {
+    $("mfDelete").onclick = () => {
+      $("mfDeleteArea").innerHTML = `<div class="confirm-row">
+        <div class="msg">Delete this entry? This can't be undone.</div>
+        <button class="mini danger" id="mfDeleteYes">Yes, delete it</button>
+        <button class="mini" id="mfDeleteNo">Cancel</button>
+      </div>`;
+      $("mfDeleteYes").onclick = () => {
+        state.entries = state.entries.filter(e => e.id !== editId);
+        save(); closeSheet(); render();
+      };
+      $("mfDeleteNo").onclick = () => { openMoneyForm(boyId, null, editId); };
+    };
+  }
+}
+
+/* ============================================================
+   Backup — save/restore a file, plus the copy/paste transfer for
+   the Safari ↔ Home Screen storage split.
+   ============================================================ */
+function download(filename, text, mime) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function applyImportedState(o) {
+  if (!o || !Array.isArray(o.boys) || !Array.isArray(o.entries)) throw new Error("wrong shape");
+  state = Object.assign(structuredClone(BLANK), o);
+  state.boys = o.boys.map(normaliseBoy);
+  state.entries = o.entries.map(normaliseEntry);
+  save(); render();
+}
+function openBackup() {
+  const totalIn = state.entries.filter(e => e.type === "in").length;
+  const totalOut = state.entries.filter(e => e.type === "out").length;
+  openSheet(`
+    <h2>Back up / restore</h2>
+    <p class="note">This lives in this browser on this phone. Clearing website data would take it with it,
+    so keep a copy somewhere you trust.</p>
+    <div class="btn-row">
+      <button class="btn" id="bkSave">Save a copy</button>
+      <button class="btn ghost" id="bkLoad">Restore from a copy</button>
+    </div>
+    <h3 style="margin-top:1.4rem">Moving it between Safari and the Home Screen app</h3>
+    <p class="note">iPhones give a Home Screen app its own storage, separate from Safari, and nothing can reach across on its own. If one of them looks empty, this is why &mdash; and this is the way across.</p>
+    <div class="btn-row">
+      <button class="btn ghost" id="bkCopy">Copy all my data</button>
+      <button class="btn ghost" id="bkPaste">Paste data in</button>
+    </div>
+    <div id="pasteSlot"></div>
+    <input type="file" id="bkFile" accept="application/json,.json" style="display:none">
+    <p id="bkSay" class="tiny" style="margin-top:.5rem"></p>
+    <p class="tiny" style="margin-top:.9rem">${plural(state.boys.length, "boy")} · ${plural(totalIn, "money-in entry", "money-in entries")} · ${plural(totalOut, "money-out entry", "money-out entries")}</p>
+    <div class="btn-row" style="margin-top:1rem"><button class="mini" id="bkClose">Close</button></div>`);
+
+  $("bkClose").onclick = closeSheet;
+  $("bkSave").onclick = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    download(`sallys-boys-money-${stamp}.json`, JSON.stringify(state, null, 2), "application/json");
+    $("bkSay").className = "tiny ok"; $("bkSay").textContent = "Saved.";
+  };
+  $("bkCopy").onclick = async () => {
+    const txt = JSON.stringify(state);
+    try { await navigator.clipboard.writeText(txt); }
+    catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e2) {}
+      ta.remove();
+    }
+    $("bkSay").className = "tiny ok";
+    $("bkSay").textContent = "Copied. Now open the other one — Safari or the Home Screen app — and tap Paste data in.";
+  };
+  $("bkPaste").onclick = () => {
+    $("pasteSlot").innerHTML = `<label class="fld" style="margin-top:.9rem"><span>Paste it here</span>
+      <textarea id="pasteBox" style="min-height:5rem" placeholder="Paste what you copied from the other one"></textarea></label>
+      <div class="btn-row"><button class="btn" id="pasteGo">Load it</button>
+      <button class="mini" id="pasteCancel">Cancel</button></div>
+      <div id="pasteConfirm"></div>`;
+    $("pasteCancel").onclick = () => { $("pasteSlot").innerHTML = ""; };
+    $("pasteGo").onclick = () => {
+      let o;
+      try { o = JSON.parse($("pasteBox").value.trim()); if (!Array.isArray(o.boys)) throw new Error("wrong shape"); }
+      catch (e) {
+        $("bkSay").className = "tiny err";
+        $("bkSay").textContent = "That did not read as your data. Copy the whole thing from the other one and try again.";
+        return;
+      }
+      $("pasteConfirm").innerHTML = `<div class="confirm-row">
+        <div class="msg">Replace what's here with ${plural(o.boys.length, "boy")} and ${plural((o.entries || []).length, "entry", "entries")} from the other one? This can't be undone.</div>
+        <button class="mini danger" id="pasteYes">Yes, replace it</button>
+        <button class="mini" id="pasteNo">Cancel</button>
+      </div>`;
+      $("pasteYes").onclick = () => {
+        try {
+          applyImportedState(o);
+          openBackup(); // redraws the sheet so its boy/entry counts are current
+          $("bkSay").className = "tiny ok";
+          $("bkSay").textContent = "Brought across " + plural(state.boys.length, "boy") + ".";
+        } catch (e) {
+          $("bkSay").className = "tiny err"; $("bkSay").textContent = "That did not read as your data.";
+        }
+      };
+      $("pasteNo").onclick = () => { $("pasteConfirm").innerHTML = ""; };
+    };
+  };
+  $("bkLoad").onclick = () => $("bkFile").click();
+  $("bkFile").onchange = ev => {
+    const f = ev.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      let o;
+      try { o = JSON.parse(rd.result); if (!Array.isArray(o.boys)) throw new Error("wrong shape"); }
+      catch (e) {
+        $("bkSay").className = "tiny err"; $("bkSay").textContent = "That file didn't look like a backup from here.";
+        return;
+      }
+      $("pasteSlot").innerHTML = `<div class="confirm-row">
+        <div class="msg">Replace what's here with ${plural(o.boys.length, "boy")} and ${plural((o.entries || []).length, "entry", "entries")} from that file? This can't be undone.</div>
+        <button class="mini danger" id="fileYes">Yes, replace it</button>
+        <button class="mini" id="fileNo">Cancel</button>
+      </div>`;
+      $("fileYes").onclick = () => {
+        try {
+          applyImportedState(o);
+          openBackup(); // redraws the sheet so its boy/entry counts are current
+          $("bkSay").className = "tiny ok"; $("bkSay").textContent = "Restored.";
+        } catch (e) {
+          $("bkSay").className = "tiny err"; $("bkSay").textContent = "That file didn't look like a backup from here.";
+        }
+      };
+      $("fileNo").onclick = () => { $("pasteSlot").innerHTML = ""; };
+    };
+    rd.readAsText(f);
+    ev.target.value = "";
+  };
+}
+
+/* ============================================================
+   Feedback — same shape as the other daddy apps. Type it like a
+   text; it saves here first, then goes to Mike.
+   ============================================================ */
+function fbContext() {
+  const where = state.screen === "boy" ? (boyById(state.currentBoyId) || {}).name || "a boy's screen" : state.screen;
+  return `${APP_VERSION} · ${where} · ${state.boys.length} boys · ${state.entries.length} entries`;
+}
+function isAppleTouch() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+         (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+function smsUrl(phone, msg) {
+  return "sms:" + phone.replace(/[^\d+]/g, "") + (isAppleTouch() ? "&" : "?") + "body=" + encodeURIComponent(msg);
+}
+async function shareFeedback(msg) {
+  if (state.fbPhone) { location.href = smsUrl(state.fbPhone, msg); return; }
+  if (navigator.share) {
+    try { await navigator.share({ text: msg }); return; }
+    catch (e) { if (e.name === "AbortError") return; }
+  }
+  location.href = "mailto:mm@mikemonday.com?subject=" +
+    encodeURIComponent("Sally's Boys' Money feedback") + "&body=" + encodeURIComponent(msg);
+}
+function fbMsg(n) { return `Sally's Boys' Money feedback\n\n${n.text}\n\n— ${n.context}`; }
+
+$("fbBtn").onclick = () => {
+  const prev = state.reports.slice(-5).reverse();
+  openSheet(`
+    <h2>Tell Mike</h2>
+    <p class="note">Type it like a text — anything wrong, missing, annoying, or just not how you'd have done it.
+    It saves here first so it can't get lost, then sends.</p>
+    <label class="fld"><span>What's up</span><input type="text" id="fbText" placeholder="The amount keypad is fiddly…"></label>
+    <div class="btn-row"><button class="btn" id="fbSend">Save &amp; send</button><button class="mini" id="fbCancel">Close</button></div>
+    <p id="fbSay" class="tiny" style="margin-top:.5rem"></p>
+    ${prev.length ? `<div style="margin-top:.9rem"><b class="tiny">Notes you've saved (${state.reports.length})</b>${
+      prev.map(n => { const i = state.reports.indexOf(n);
+        return `<div class="tiny" style="margin-top:.3rem">${esc(n.when.slice(0, 10))} — ${esc(n.text.length > 70 ? n.text.slice(0, 70) + "…" : n.text)}
+        <button class="mini" data-resend="${i}">send again</button></div>`; }).join("")}</div>` : ""}
+    <details style="margin-top:1rem"><summary class="tiny">One-tap sending (optional)</summary>
+      <label class="fld" style="margin-top:.5rem"><span>Mike's mobile — stays on this phone</span>
+        <input type="text" id="fbPhone" value="${esc(state.fbPhone)}" placeholder="+61…"></label>
+      <button class="mini" id="fbPhoneSave">Save number</button>
+    </details>`);
+
+  $("fbCancel").onclick = closeSheet;
+  $("fbSend").onclick = () => {
+    const t = $("fbText").value.trim();
+    if (!t) { $("fbSay").className = "tiny err"; $("fbSay").textContent = "Nothing to send yet."; return; }
+    const n = { text: t, context: fbContext(), when: new Date().toISOString() };
+    state.reports.push(n); save();
+    $("fbSay").className = "tiny ok"; $("fbSay").textContent = "Saved. Opening the send…";
+    shareFeedback(fbMsg(n));
+  };
+  $("fbPhoneSave").onclick = () => {
+    state.fbPhone = $("fbPhone").value.trim(); save();
+    $("fbSay").className = "tiny ok"; $("fbSay").textContent = "Number saved on this phone.";
+  };
+  $("sheetBody").querySelectorAll("[data-resend]").forEach(b => b.onclick = () => {
+    const n = state.reports[+b.dataset.resend]; if (n) shareFeedback(fbMsg(n));
+  });
+};
+
+/* ---------------- Boot ---------------- */
+load();
+$("ver").textContent = `Sally's Boys' Money ${APP_VERSION} · made at home, for one family`;
+render();
+</script>
+</body>
+</html>
