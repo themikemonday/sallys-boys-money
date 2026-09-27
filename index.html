@@ -9,7 +9,7 @@
    the app's data, so it's untouched by backup/restore. */
 (function () {
   try {
-    var v = localStorage.getItem("sbm-theme");
+    var v = localStorage.getItem("sbm-theme-v1");
     if (v === "light" || v === "dark") document.documentElement.setAttribute("data-theme", v);
   } catch (e) {}
 })();
@@ -216,13 +216,28 @@
   }
 
   footer {
-    padding: 2rem 1.25rem 2.5rem; font-size: .76rem; color: var(--faint); line-height: 1.6;
+    padding: 2rem 1.25rem calc(6rem + env(safe-area-inset-bottom));
+    font-size: .76rem; color: var(--faint); line-height: 1.6;
     border-top: 1px solid var(--rule); margin-top: 1rem;
   }
   footer p + p { margin-top: .6rem; }
   footer b { color: var(--muted); font-weight: 600; }
   .ok { color: var(--ink); }
   .err { color: var(--accent); }
+
+  /* Appearance — tiny icons on the version line, not a settings section */
+  .ver-row { display: flex; align-items: center; flex-wrap: wrap; gap: .2rem .4rem; margin-top: .5rem; }
+  .ver-row #ver { margin-top: 0; }
+  .theme-row { display: flex; margin-left: auto; }
+  .theme-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; flex-shrink: 0;
+    border: none; background: none; padding: 0; margin: 0;
+    cursor: pointer; color: var(--faint);
+  }
+  .theme-icon svg { width: 17px; height: 17px; display: block; }
+  .theme-icon.on { color: var(--ink); }
+  .theme-icon:active { opacity: .6; }
 </style>
 </head>
 <body>
@@ -239,15 +254,28 @@
 <footer>
   <p><b>Everything here lives on this phone.</b> Nothing is sent anywhere, there is no account, and no one else can see it. Use <b>Back up / restore</b> to save a copy you keep.</p>
   <p style="margin-top:.5rem">This is a first version, made to be argued with. If something is wrong, missing, or annoying, tap Tell Mike and say so.</p>
-  <div style="margin-top:1rem">
-    <h3 style="margin-bottom:.5rem">Appearance</h3>
-    <div class="seg" id="themeSeg">
-      <button type="button" data-theme-choice="auto">Automatic</button>
-      <button type="button" data-theme-choice="light">Light</button>
-      <button type="button" data-theme-choice="dark">Dark</button>
+  <div class="ver-row">
+    <p class="tiny" id="ver"></p>
+    <div class="theme-row" id="themeSeg">
+      <button type="button" class="theme-icon" data-theme-choice="auto" title="Follow the phone" aria-label="Follow the phone">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"></path>
+        </svg>
+      </button>
+      <button type="button" class="theme-icon" data-theme-choice="light" title="Light" aria-label="Light">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+        </svg>
+      </button>
+      <button type="button" class="theme-icon" data-theme-choice="dark" title="Dark" aria-label="Dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"></path>
+        </svg>
+      </button>
     </div>
   </div>
-  <p style="margin-top:.5rem" class="tiny" id="ver"></p>
 </footer>
 
 <button class="fab" id="fbBtn" title="Tell Mike what's wrong">Tell Mike</button>
@@ -275,7 +303,7 @@
    in NOTES-private.md, which never leaves the private repo.
    ============================================================ */
 
-const APP_VERSION = "v0.2";
+const APP_VERSION = "v0.2.1";
 const STORE_KEY = "sbm-money-v1"; // unique prefix — themikemonday.github.io is a shared origin
 const THEME_KEY = "sbm-theme-v1"; // separate key, on purpose — never part of `state`, so it plays no part in backup/restore
 const $ = id => document.getElementById(id);
